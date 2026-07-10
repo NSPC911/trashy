@@ -1,24 +1,26 @@
-"""Windows backend using only ``ctypes`` + stdlib.
+"""Windows backend using only `ctypes` + stdlib.
 
 Two mechanisms are combined:
 
-* ``recycle`` calls ``SHFileOperationW`` with ``FOF_ALLOWUNDO`` so the OS
-  writes correct ``$I`` metadata (we never hand-move files into the bin).
-* ``entries`` / ``restore`` work directly against the per-SID
-  ``<drive>:\\$Recycle.Bin\\<SID>`` folders. On Vista+ each recycled item is a
-  self-contained ``$Ixxxxxx`` (metadata) + ``$Rxxxxxx`` (data) pair with no
-  central index, so restoring is just moving ``$R`` back and deleting the pair
-  — no COM / ``undelete`` verb plumbing required.
+* `recycle` calls `SHFileOperationW` with `FOF_ALLOWUNDO` so the OS
+  writes correct `$I` metadata (we never hand-move files into the bin).
+* `entries` / `restore` work directly against the per-SID
+  `<drive>:\\$Recycle.Bin\\<SID>` folders. On Vista+ each recycled item is a
+  self-contained `$Ixxxxxx` (metadata) + `$Rxxxxxx` (data) pair with no
+  central index, so restoring is just moving `$R` back and deleting the pair
+  — no COM / `undelete` verb plumbing required.
 """
 
 from __future__ import annotations
 
+import contextlib
 import ctypes
 import os
 import shutil
 import struct
 from ctypes import wintypes
 from datetime import datetime, timedelta, timezone
+from typing import Callable
 
 from ._type import TrashEntry
 
@@ -105,31 +107,36 @@ class WindowsRecycleBin:
         out.sort(key=lambda e: e.deleted_at or datetime.min, reverse=True)
         return out
 
-    def restore(self, items: list[TrashEntry]) -> None:
+    def restore(self, items: list[TrashEntry], on_exist: Callable[[Exception], bool] = lambda x: False) -> None:
         for entry in items:
             info_path = entry._handle
             data_path = self._data_path(info_path)
             if not os.path.lexists(data_path):
-                raise FileNotFoundError(
+                exc = FileNotFoundError(
                     f"trashed data missing for {entry.name!r}: {data_path}"
                 )
+                if not on_exist(exc):
+                    raise exc
             dest = entry.original_path
+            if not dest:
+                raise ValueError(f"cannot restore {entry.name!r}: original path unknown")
             if os.path.lexists(dest):
-                raise FileExistsError(
+                exc = FileExistsError(
                     f"cannot restore {entry.name!r}: {dest} already exists"
                 )
+                if not on_exist(exc):
+                    raise exc
             os.makedirs(os.path.dirname(dest), exist_ok=True)
+            if os.path.lexists(dest):
+                shutil.rmtree(dest) if os.path.isdir(dest) else os.remove(dest)
             shutil.move(data_path, dest)
-            try:
+            with contextlib.suppress(OSError):
                 os.remove(info_path)
-            except OSError:
-                pass
 
     # -- helpers -----------------------------------------------------------
 
     @staticmethod
     def _data_path(info_path: str) -> str:
-        """``$Ixxxxxx`` -> its sibling ``$Rxxxxxx`` data file/dir."""
         d, name = os.path.split(info_path)
         return os.path.join(d, "$R" + name[2:])
 

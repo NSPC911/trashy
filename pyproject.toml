@@ -1,5 +1,5 @@
 [project]
-name = "repycle"
+name = "trashy"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -10,8 +10,74 @@ requires-python = ">=3.12"
 dependencies = []
 
 [project.scripts]
-repycle = "repycle:main"
+trashy = "trashy:main"
+
+[dependency-groups]
+dev = [
+  "poethepoet>=0.45.0",
+  "ruff>=0.15.0",
+  "ty==0.0.49",
+]
 
 [build-system]
 requires = ["uv_build>=0.11.28,<0.12.0"]
 build-backend = "uv_build"
+
+[tool.poe.tasks]
+check.help = "Run all checks (type checking and linting)"
+check.sequence = [ { cmd = "ty check" },{ cmd = "ruff check" } ]
+
+fmt.help = ""
+fmt.ref = "format"
+format.help = "Run ruff related formatters"
+format.sequence = [ { cmd = "ruff check --unsafe-fixes --fix"}, { cmd = "ruff format"} ]
+
+[tool.ruff]
+force-exclude = true
+exclude = []
+
+[tool.ruff.lint]
+select = [
+  "ASYNC220",
+  "ASYNC221",
+  "ASYNC251",
+  "ANN",
+  "COM819",
+  "C400",
+  "DOC",
+  "D404",
+  "E",
+  "F",
+  "I",
+  "N801", "N802", "N805",
+  "PLE1142",
+  "Q",
+  "SIM",
+  "TD",
+  "W",
+]
+ignore = [
+  "ANN002",
+  "ANN003",
+  "ANN401",
+  "E501",
+  "E731",
+  "TD002",
+  "TD003",
+  "W505",
+]
+preview = true
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+preview = true
+
+[tool.ty.rules]
+unresolved-reference = "ignore" # handled by ruff
+unresolved-attribute = "ignore"
+no-matching-overload = "ignore" # not that accurate
+# possibly-missing-attribute = "ignore" # no it is not missing
+invalid-assignment = "warn" # probably already but warn for future
+unused-ignore-comment = "ignore"

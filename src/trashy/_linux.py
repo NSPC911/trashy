@@ -2,15 +2,17 @@
 
 https://specifications.freedesktop.org/trash-spec/latest/
 
-Pure stdlib: a recycle bin here is just a pair of ``files/`` and ``info/``
-directories plus one ``.trashinfo`` sidecar per item, so no ctypes is needed.
+Pure stdlib: a recycle bin here is just a pair of `files/` and `info/`
+directories plus one `.trashinfo` sidecar per item, so no ctypes is needed.
 """
 
 from __future__ import annotations
 
+import contextlib
 import os
 import shutil
 from datetime import datetime
+from typing import Callable
 from urllib.parse import quote, unquote
 
 from ._type import TrashEntry
@@ -27,7 +29,7 @@ def _home_trash() -> str:
 
 
 def _device_of(path: str) -> int:
-    """``st_dev`` of ``path``, walking up to the nearest existing ancestor."""
+    """`st_dev` of `path`, walking up to the nearest existing ancestor."""  # ruff:ignore[docstring-missing-returns]
     path = os.path.realpath(path)
     while not os.path.lexists(path):
         parent = os.path.dirname(path)
@@ -38,7 +40,7 @@ def _device_of(path: str) -> int:
 
 
 def _mount_point(path: str) -> str:
-    """Return the mount point (top directory) containing ``path``."""
+    """Return the mount point (top directory) containing `path`."""  # ruff:ignore[docstring-missing-returns]
     path = os.path.realpath(path)
     dev = _device_of(path)
     while True:
@@ -51,10 +53,12 @@ def _mount_point(path: str) -> str:
 
 
 def _trash_dir_for(path: str) -> str:
-    """Pick the trash directory that should hold ``path``.
+    """Pick the trash directory that should hold `path`.
 
     Items on the same filesystem as the home trash go there; items on another
-    volume go to ``$topdir/.Trash-$uid`` so the rename stays on one device.
+    volume go to `$topdir/.Trash-$uid` so the rename stays on one device.
+    Returns:
+        The path to the trash directory that should hold `path`.
     """
     home = _home_trash()
     if _device_of(path) == _device_of(home):
@@ -72,7 +76,16 @@ def _ensure_dirs(trash_dir: str) -> tuple[str, str]:
 
 
 def _unique_name(info_dir: str, files_dir: str, base: str) -> str:
-    """Find a name free in both ``info/`` and ``files/`` (spec: no clobber)."""
+    """Find a name free in both `info/` and `files/` (spec: no clobber).
+
+    Args:
+        info_dir: path to the `info/` directory
+        files_dir: path to the `files/` directory
+        base: desired name (basename of the original file)
+
+    Returns:
+        A name that does not exist in either directory, appending `.N` if needed.
+    """
     candidate = base
     n = 1
     while os.path.exists(
@@ -126,10 +139,8 @@ class LinuxRecycleBin:
                 name = entry[: -len(_INFO_EXT)]
                 data_path = os.path.join(files_dir, name)
                 size = None
-                try:
+                with contextlib.suppress(OSError):
                     size = os.path.getsize(data_path)
-                except OSError:
-                    pass
                 out.append(
                     TrashEntry(
                         name=name,
@@ -144,7 +155,7 @@ class LinuxRecycleBin:
         )
         return out
 
-    def restore(self, items: list[TrashEntry]) -> None:
+    def restore(self, items: list[TrashEntry], on_exist: Callable[[Exception], bool] = lambda x: False) -> None:
         for entry in items:
             info_path = entry._handle
             trash_dir = os.path.dirname(os.path.dirname(info_path))
@@ -152,15 +163,19 @@ class LinuxRecycleBin:
             data_path = os.path.join(trash_dir, "files", name)
 
             if not os.path.lexists(data_path):
-                raise FileNotFoundError(
-                    f"trashed data missing for {entry.name!r}: {data_path}"
-                )
+                exc = FileNotFoundError(f"trashed data missing for {entry.name!r}: {data_path}")
+                if not on_exist(exc):
+                    raise exc
             dest = entry.original_path
+            if not dest:
+                raise ValueError(f"cannot restore {entry.name!r}: original path unknown")
             if os.path.lexists(dest):
-                raise FileExistsError(
-                    f"cannot restore {entry.name!r}: {dest} already exists"
-                )
+                exc = FileExistsError(f"cannot restore {entry.name!r}: {dest} already exists")
+                if not on_exist(exc):
+                    raise exc
             os.makedirs(os.path.dirname(dest), exist_ok=True)
+            if os.path.lexists(dest):
+                shutil.rmtree(dest) if os.path.isdir(dest) else os.remove(dest)
             shutil.move(data_path, dest)
             os.remove(info_path)
 

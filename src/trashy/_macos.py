@@ -1,14 +1,14 @@
-"""macOS backend using only ``ctypes`` + stdlib.
+"""macOS backend using only `ctypes` + stdlib.
 
-``recycle`` drives Foundation's ``-[NSFileManager trashItemAtURL:...]`` through
+`recycle` drives Foundation's `-[NSFileManager trashItemAtURL:...]` through
 the Objective-C runtime, which keeps the "Put Back" metadata that Finder needs.
-``entries`` lists ``~/.Trash`` directly.
+`entries` lists `~/.Trash` directly.
 
-``restore`` is the genuinely awkward one: macOS stores the original location as
+`restore` is the genuinely awkward one: macOS stores the original location as
 Finder-managed metadata, not a readable sidecar, so a fully clean restore-to-
 original relies on Finder. That path is left unimplemented here rather than
 shipped as something that silently restores to the wrong place; see the note in
-:meth:`MacRecycleBin.restore`.
+`MacRecycleBin.restore`.
 """
 
 from __future__ import annotations
@@ -17,13 +17,14 @@ import ctypes
 import ctypes.util
 import os
 from datetime import datetime
+from typing import Callable
 
 from ._type import TrashEntry
 
 
-def _load_objc():
-    objc = ctypes.cdll.LoadLibrary(ctypes.util.find_library("objc"))
-    ctypes.cdll.LoadLibrary(ctypes.util.find_library("Foundation"))
+def _load_objc():  # noqa
+    objc = ctypes.cdll.LoadLibrary(ctypes.util.find_library("objc"))  # ty: ignore[invalid-argument-type]
+    ctypes.cdll.LoadLibrary(ctypes.util.find_library("Foundation"))  # ty: ignore[invalid-argument-type]
 
     objc.objc_getClass.restype = ctypes.c_void_p
     objc.objc_getClass.argtypes = [ctypes.c_char_p]
@@ -32,7 +33,7 @@ def _load_objc():
     return objc
 
 
-def _msg(objc, receiver, selector, restype, argtypes, *args):
+def _msg(objc, receiver, selector, restype, argtypes, *args):  # noqa
     send = objc.objc_msgSend
     send.restype = restype
     send.argtypes = [ctypes.c_void_p, ctypes.c_void_p, *argtypes]
@@ -103,7 +104,7 @@ class MacRecycleBin:
                 TrashEntry(
                     name=name,
                     # macOS does not expose the origin as readable metadata.
-                    original_path="",
+                    original_path=None,
                     deleted_at=datetime.fromtimestamp(st.st_mtime),
                     size=st.st_size,
                     _handle=full,
@@ -112,7 +113,7 @@ class MacRecycleBin:
         out.sort(key=lambda e: e.deleted_at or datetime.min, reverse=True)
         return out
 
-    def restore(self, items: list[TrashEntry]) -> None:
+    def restore(self, items: list[TrashEntry], on_exist: Callable[[Exception], bool] = lambda x: False) -> None:
         raise NotImplementedError(
             "restore-to-original on macOS needs Finder's Put Back metadata, "
             "which is not readable from a sidecar. Use AppleScript, e.g.:\n"
