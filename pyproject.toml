@@ -1,7 +1,7 @@
 [project]
 name = "trashy"
-version = "0.1.0"
-description = "Add your description here"
+version = "0.1.1"
+description = "a high level api for handling recycle bins across platforms"
 readme = "README.md"
 authors = [
   { name = "NSPC911", email = "87571998+NSPC911@users.noreply.github.com" }
