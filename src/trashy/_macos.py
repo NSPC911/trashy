@@ -9,7 +9,7 @@ per-user trash (`/Volumes/<vol>/.Trashes/<uid>`).
 `osascript`, and therefore no Accessibility permission (which would let any
 app drive other apps / synthesize input; far scarier than the Full Disk Access
 that reading the trash already needs). Finder records each item's original
-path as ``ptbL``/``ptbN`` records in the trash's `.DS_Store`; we read those
+path as `ptbL`/`ptbN` records in the trash's `.DS_Store`; we read those
 directly (see `_dsstore`) to populate `entry.original_path`, so restore can
 put the item back where it came from. When the origin is unknown (no
 `.DS_Store` record), restore falls back to a caller-supplied `dest` directory.
@@ -70,9 +70,7 @@ class MacRecycleBin:
         cls_url = objc.objc_getClass(b"NSURL")
         cls_fm = objc.objc_getClass(b"NSFileManager")
 
-        fm = _msg(
-            objc, cls_fm, "defaultManager", ctypes.c_void_p, []
-        )
+        fm = _msg(objc, cls_fm, "defaultManager", ctypes.c_void_p, [])
 
         for item in items:
             path = os.path.abspath(os.fspath(item))
@@ -107,9 +105,7 @@ class MacRecycleBin:
                 ctypes.byref(err),
             )
             if not ok:
-                raise OSError(
-                    f"failed to trash {path!r}: {_error_text(objc, err)}"
-                )
+                raise OSError(f"failed to trash {path!r}: {_error_text(objc, err)}")
 
     def entries(self) -> list[TrashEntry]:
         out: list[TrashEntry] = []
@@ -130,11 +126,7 @@ class MacRecycleBin:
         for vol in volumes:
             vol_root = os.path.join("/Volumes", vol)
             vol_trash = os.path.join(vol_root, ".Trashes", str(uid))
-            out.extend(
-                self._scan_trash(
-                    vol_trash, strict=False, volume_root=vol_root
-                )
-            )
+            out.extend(self._scan_trash(vol_trash, strict=False, volume_root=vol_root))
         out.sort(key=lambda e: e.deleted_at or datetime.min, reverse=True)
         return out
 
@@ -178,9 +170,7 @@ class MacRecycleBin:
                 if not on_exist(exc):
                     raise exc
                 # on_exist opted to overwrite.
-                shutil.rmtree(target) if os.path.isdir(target) else os.remove(
-                    target
-                )
+                shutil.rmtree(target) if os.path.isdir(target) else os.remove(target)
             os.makedirs(os.path.dirname(target) or ".", exist_ok=True)
             shutil.move(src, target)
 
@@ -191,7 +181,7 @@ class MacRecycleBin:
         """Recover original paths from this trash's `.DS_Store`, if readable.
 
         Returns:
-            ``{trashed_name: original_path}``; empty when the sidecar is
+            `{trashed_name: original_path}`; empty when the sidecar is
             missing, unreadable, or malformed (recovery is best-effort).
         """
         try:
@@ -201,9 +191,7 @@ class MacRecycleBin:
             return {}
 
     @staticmethod
-    def _scan_trash(
-        trash: str, strict: bool, volume_root: str
-    ) -> list[TrashEntry]:
+    def _scan_trash(trash: str, strict: bool, volume_root: str) -> list[TrashEntry]:
         out: list[TrashEntry] = []
         try:
             names = os.listdir(trash)

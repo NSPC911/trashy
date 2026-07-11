@@ -1,4 +1,4 @@
-"""trashy — a cross-platform recycle bin: send *and* restore.
+"""trashy: a cross-platform recycle bin: send *and* restore.
 
 Unlike send-to-trash-only libraries, this exposes the full round trip:
 
@@ -7,7 +7,7 @@ Unlike send-to-trash-only libraries, this exposes the full round trip:
     >>> entries = trashy.entries()
     >>> trashy.restore([entries[0]])
 
-Every platform is backed by stdlib + `ctypes` only — no third-party deps.
+Every platform is backed by stdlib + `ctypes` only, no third-party deps.
 """
 
 from __future__ import annotations

@@ -45,8 +45,10 @@ def _mount_point(path: str) -> str:
     dev = _device_of(path)
     while True:
         parent = os.path.dirname(path)
-        if parent == path or not os.path.lexists(parent) or (
-            os.lstat(parent).st_dev != dev
+        if (
+            parent == path
+            or not os.path.lexists(parent)
+            or (os.lstat(parent).st_dev != dev)
         ):
             return path
         path = parent
@@ -115,9 +117,7 @@ class LinuxRecycleBin:
             deleted_at = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
             with open(info_path, "x", encoding="utf-8") as fh:
                 fh.write(
-                    "[Trash Info]\n"
-                    f"Path={quote(src)}\n"
-                    f"DeletionDate={deleted_at}\n"
+                    f"[Trash Info]\nPath={quote(src)}\nDeletionDate={deleted_at}\n"
                 )
             shutil.move(src, os.path.join(files_dir, name))
 
@@ -150,12 +150,14 @@ class LinuxRecycleBin:
                         _handle=info_path,
                     )
                 )
-        out.sort(
-            key=lambda e: e.deleted_at or datetime.min, reverse=True
-        )
+        out.sort(key=lambda e: e.deleted_at or datetime.min, reverse=True)
         return out
 
-    def restore(self, items: list[TrashEntry], on_exist: Callable[[Exception], bool] = lambda x: False) -> None:
+    def restore(
+        self,
+        items: list[TrashEntry],
+        on_exist: Callable[[Exception], bool] = lambda x: False,
+    ) -> None:
         for entry in items:
             info_path = entry._handle
             trash_dir = os.path.dirname(os.path.dirname(info_path))
@@ -163,14 +165,20 @@ class LinuxRecycleBin:
             data_path = os.path.join(trash_dir, "files", name)
 
             if not os.path.lexists(data_path):
-                exc = FileNotFoundError(f"trashed data missing for {entry.name!r}: {data_path}")
+                exc = FileNotFoundError(
+                    f"trashed data missing for {entry.name!r}: {data_path}"
+                )
                 if not on_exist(exc):
                     raise exc
             dest = entry.original_path
             if not dest:
-                raise ValueError(f"cannot restore {entry.name!r}: original path unknown")
+                raise ValueError(
+                    f"cannot restore {entry.name!r}: original path unknown"
+                )
             if os.path.lexists(dest):
-                exc = FileExistsError(f"cannot restore {entry.name!r}: {dest} already exists")
+                exc = FileExistsError(
+                    f"cannot restore {entry.name!r}: {dest} already exists"
+                )
                 if not on_exist(exc):
                     raise exc
             os.makedirs(os.path.dirname(dest), exist_ok=True)
@@ -225,9 +233,7 @@ class LinuxRecycleBin:
                         original = unquote(value)
                     elif key == "DeletionDate":
                         try:
-                            deleted_at = datetime.strptime(
-                                value, "%Y-%m-%dT%H:%M:%S"
-                            )
+                            deleted_at = datetime.strptime(value, "%Y-%m-%dT%H:%M:%S")
                         except ValueError:
                             deleted_at = None
         except OSError:

@@ -3,10 +3,10 @@
 macOS records a trashed item's "Put Back" location in the trash folder's
 `.DS_Store` as two records keyed by the item's on-disk name:
 
-* ``ptbL`` -- the original parent directory, relative to the volume root
-* ``ptbN`` -- the original file name
+* `ptbL` -- the original parent directory, relative to the volume root
+* `ptbN` -- the original file name
 
-On current macOS (verified on Ventura) both are stored as ``ustr`` (a plain
+On current macOS (verified on Ventura) both are stored as `ustr` (a plain
 UTF-16BE string), so recovering the origin needs no bookmark/alias decoding
 and therefore no third-party dependency. This module reads just enough of the
 format to pull those records out; it never writes.
@@ -64,11 +64,11 @@ def _read_record(r: _Reader) -> tuple[str, bytes, object]:
 
 
 def parse(buf: bytes) -> dict[str, dict[str, object]]:
-    """Parse a `.DS_Store` image into ``{filename: {structId: value}}``.
+    """Parse a `.DS_Store` image into `{filename: {structId: value}}`.
 
     Returns:
         Every record grouped by its filename, mapping each 4-char structure
-        id (e.g. ``"ptbL"``) to its decoded value.
+        id (e.g. `"ptbL"`) to its decoded value.
 
     Raises:
         ValueError: The buffer is not a valid `.DS_Store` (bad magic or a
@@ -131,12 +131,12 @@ def put_back_locations(buf: bytes, volume_root: str) -> dict[str, str]:
 
     Args:
         buf: Raw bytes of a trash folder's `.DS_Store`.
-        volume_root: Mount point the ``ptbL`` paths are relative to
-            (``"/"`` for the home trash, ``/Volumes/<vol>`` otherwise).
+        volume_root: Mount point the `ptbL` paths are relative to
+            (`"/"` for the home trash, `/Volumes/<vol>` otherwise).
 
     Returns:
-        ``{trashed_name: original_absolute_path}`` for every entry that has a
-        ``ptbL`` record. Entries without one are omitted.
+        `{trashed_name: original_absolute_path}` for every entry that has a
+        `ptbL` record. Entries without one are omitted.
     """
     import os.path
 

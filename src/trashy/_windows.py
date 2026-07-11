@@ -7,8 +7,8 @@ Two mechanisms are combined:
 * `entries` / `restore` work directly against the per-SID
   `<drive>:\\$Recycle.Bin\\<SID>` folders. On Vista+ each recycled item is a
   self-contained `$Ixxxxxx` (metadata) + `$Rxxxxxx` (data) pair with no
-  central index, so restoring is just moving `$R` back and deleting the pair
-  — no COM / `undelete` verb plumbing required.
+  central index, so restoring is just moving `$R` back and deleting the pair,
+  no COM / `undelete` verb plumbing required.
 """
 
 from __future__ import annotations
@@ -70,9 +70,7 @@ class WindowsRecycleBin:
         op.wFunc = FO_DELETE
         op.pFrom = buf
         op.pTo = None
-        op.fFlags = (
-            FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_SILENT | FOF_NOERRORUI
-        )
+        op.fFlags = FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_SILENT | FOF_NOERRORUI
 
         rc = ctypes.windll.shell32.SHFileOperationW(ctypes.byref(op))
         if rc != 0:
@@ -107,7 +105,11 @@ class WindowsRecycleBin:
         out.sort(key=lambda e: e.deleted_at or datetime.min, reverse=True)
         return out
 
-    def restore(self, items: list[TrashEntry], on_exist: Callable[[Exception], bool] = lambda x: False) -> None:
+    def restore(
+        self,
+        items: list[TrashEntry],
+        on_exist: Callable[[Exception], bool] = lambda x: False,
+    ) -> None:
         for entry in items:
             info_path = entry._handle
             data_path = self._data_path(info_path)
@@ -119,7 +121,9 @@ class WindowsRecycleBin:
                     raise exc
             dest = entry.original_path
             if not dest:
-                raise ValueError(f"cannot restore {entry.name!r}: original path unknown")
+                raise ValueError(
+                    f"cannot restore {entry.name!r}: original path unknown"
+                )
             if os.path.lexists(dest):
                 exc = FileExistsError(
                     f"cannot restore {entry.name!r}: {dest} already exists"
@@ -164,9 +168,7 @@ class WindowsRecycleBin:
     @staticmethod
     def _drives() -> list[str]:
         mask = ctypes.windll.kernel32.GetLogicalDrives()
-        return [
-            f"{chr(65 + i)}:\\" for i in range(26) if mask & (1 << i)
-        ]
+        return [f"{chr(65 + i)}:\\" for i in range(26) if mask & (1 << i)]
 
     @staticmethod
     def _current_sid() -> str | None:
@@ -183,9 +185,7 @@ class WindowsRecycleBin:
             ):
                 return None
             size = wintypes.DWORD(0)
-            advapi32.GetTokenInformation(
-                token, TokenUser, None, 0, ctypes.byref(size)
-            )
+            advapi32.GetTokenInformation(token, TokenUser, None, 0, ctypes.byref(size))
             buf = ctypes.create_string_buffer(size.value)
             if not advapi32.GetTokenInformation(
                 token, TokenUser, buf, size, ctypes.byref(size)
@@ -194,9 +194,7 @@ class WindowsRecycleBin:
             # TOKEN_USER starts with SID_AND_ATTRIBUTES; first pointer is Sid.
             sid_ptr = ctypes.cast(buf, ctypes.POINTER(ctypes.c_void_p))[0]
             str_ptr = ctypes.c_wchar_p()
-            if not advapi32.ConvertSidToStringSidW(
-                sid_ptr, ctypes.byref(str_ptr)
-            ):
+            if not advapi32.ConvertSidToStringSidW(sid_ptr, ctypes.byref(str_ptr)):
                 return None
             value = str_ptr.value
             kernel32.LocalFree(str_ptr)
@@ -219,12 +217,12 @@ class WindowsRecycleBin:
         version, size, ft = struct.unpack_from("<qqq", blob, 0)
         if version == 1:
             # Fixed 260-wchar (520-byte) path field.
-            raw = blob[24:24 + 520]
+            raw = blob[24 : 24 + 520]
         elif version == 2:
             if len(blob) < 28:
                 return None
             (nchars,) = struct.unpack_from("<i", blob, 24)
-            raw = blob[28:28 + nchars * 2]
+            raw = blob[28 : 28 + nchars * 2]
         else:
             return None
         original = raw.decode("utf-16-le", errors="replace").split("\x00", 1)[0]

@@ -59,7 +59,11 @@ class RecycleBinLike(Protocol):
         """
         ...
 
-    def restore(self, items: list[TrashEntry], on_exist: Callable[[Exception], bool] = lambda x: False) -> None:
+    def restore(
+        self,
+        items: list[TrashEntry],
+        on_exist: Callable[[Exception], bool] = lambda x: False,
+    ) -> None:
         """Restore items previously returned by `entries`.
 
         Args:
