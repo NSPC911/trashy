@@ -1,6 +1,6 @@
 [project]
 name = "pytrash"
-version = "0.2.0"
+version = "0.3.0"
 description = "a high level api for handling recycle bins across platforms"
 readme = "README.md"
 authors = [
