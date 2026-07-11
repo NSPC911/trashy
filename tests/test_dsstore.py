@@ -2,14 +2,14 @@
 
 `trash.DS_Store` is a real trash-folder sidecar captured on macOS Ventura,
 holding put-back records for two files: one deleted via Finder (`test.py`)
-and one deleted via trashy's own `recycle()` (`probe.txt`). Both must resolve
+and one deleted via pytrash's own `recycle()` (`probe.txt`). Both must resolve
 to their original absolute paths -- that's the whole basis for restore-to-
 origin on macOS.
 """
 
 from pathlib import Path
 
-from trashy import _dsstore
+from pytrash import _dsstore
 
 FIXTURE = Path(__file__).parent / "fixtures" / "trash.DS_Store"
 

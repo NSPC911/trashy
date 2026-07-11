@@ -1,11 +1,11 @@
-"""trashy: a cross-platform recycle bin: send *and* restore.
+"""pytrash: a cross-platform recycle bin: send *and* restore.
 
 Unlike send-to-trash-only libraries, this exposes the full round trip:
 
-    >>> import trashy
-    >>> trashy.recycle(["notes.txt"])
-    >>> entries = trashy.entries()
-    >>> trashy.restore([entries[0]])
+    >>> import pytrash
+    >>> pytrash.recycle(["notes.txt"])
+    >>> entries = pytrash.entries()
+    >>> pytrash.restore([entries[0]])
 
 Every platform is backed by stdlib + `ctypes` only, no third-party deps.
 """

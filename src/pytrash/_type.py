@@ -38,7 +38,7 @@ class RecycleBinLike(Protocol):
     """Cross-platform recycle-bin backend contract.
 
     One concrete implementation exists per OS. Callers should go through the
-    module-level helpers in `trashy` rather than instantiating a backend
+    module-level helpers in `pytrash` rather than instantiating a backend
     directly.
     """
 

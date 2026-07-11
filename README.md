@@ -1,19 +1,19 @@
-# trashy
+# pytrash
 
 a high level api for handling recycle bins across platforms
 
 ### Installation
 ```
-uv add trashy
+uv add pytrash
 ```
 
 ### Usage
 ```py
-import trashy
+import pytrash
 
-# trashy provides a way to move files to the bin, list entries in bin, and restore files from bin.
+# pytrash provides a way to move files to the bin, list entries in bin, and restore files from bin.
 # create instance of Bin
-bin = trashy.RecycleBin()
+bin = pytrash.RecycleBin()
 
 # move a file to the bin
 bin.recycle(["path/to/file.txt"])

@@ -1,6 +1,6 @@
 [project]
-name = "trashy"
-version = "0.1.1"
+name = "pytrash"
+version = "0.2.0"
 description = "a high level api for handling recycle bins across platforms"
 readme = "README.md"
 authors = [
@@ -10,7 +10,7 @@ requires-python = ">=3.12"
 dependencies = []
 
 [project.scripts]
-trashy = "trashy:main"
+pytrash = "pytrash:main"
 
 [dependency-groups]
 dev = [
